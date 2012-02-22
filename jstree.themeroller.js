@@ -1,12 +1,11 @@
 (function ($) {
 	$.jstree.plugin("themeroller", {
             __construct : function () {
-                var jstree = this;
                 var container = this.get_container();
                 var settings = this.get_settings(true).themeroller;
 
                 $(container).bind('before.jstree', function(){
-                    container.addClass("ui-widget ui-widget-content");
+                    container.addClass("ui-widget");
                     $("#" + container.attr("id") + " li a").live("mouseover", function () { $(this).addClass("ui-state-hover"); });
                     $("#" + container.attr("id") + " li a").live("mouseout",  function () { $(this).removeClass("ui-state-hover"); });
                 });
@@ -32,6 +31,14 @@
                         
                     $(container).find("a").not(".ui-state-default").addClass("ui-state-default").
                         children('ins').addClass('ui-icon ui-icon-grip-dotted-vertical ui-widget-jstree-node-icon');
+                    
+                    $(container).find('a').each(function(){
+                        var data = $(this).find('[data-options]').data('options');
+                        if (data.classes) {
+                            $(this).addClass(data.classes);
+                        }
+                    });
+                    
                     $(container).find('ins.jstree-icon.jstree-ocl').addClass('ui-icon ui-widget-jstree-node-icon');
                     
                     $(container).find('ins').each(function(){
@@ -199,10 +206,7 @@
                             '.jstree a { text-decoration:none; } ' + 
                             '.jstree a > .jstree-themeicon { height:16px; width:16px; margin-right:3px; } ' + 
                             '.jstree-rtl a > .jstree-themeicon { margin-left:3px; margin-right:0; } ' + 
-                            '.jstree .jstree-no-icons .jstree-themeicon, .jstree .jstree-themeicon-hidden { display:none; } ' +
-                            '.ui-inline-block { display:inline-block; }' + 
-                            '.ui-widget-jstree-node-icon { vertical-align: middle; }' + 
-                            '.ui-widget-jstree-information { margin-left: 20px; }';
+                            '.jstree .jstree-no-icons .jstree-themeicon, .jstree .jstree-themeicon-hidden { display:none; } ';
             // Correct IE 6 (does not support the > CSS selector)
             if($.jstree.IS_IE6) { 
                 css_string += '' + 
