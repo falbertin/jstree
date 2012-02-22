@@ -29,8 +29,7 @@
                     // Ensure dots are applied
                     $(container).children("ul").addClass(settings.dots ? "ui-widget-jstree-dots" : "ui-widget-jstree-no-dots");
                         
-                    $(container).find("a").not(".ui-state-default").addClass("ui-state-default").
-                        children('ins').addClass('ui-icon ui-icon-grip-dotted-vertical ui-widget-jstree-node-icon');
+                    $(container).find("a").not(".ui-state-default").addClass("ui-state-default");
                     
                     $(container).find('a').each(function(){
                         var data = $(this).find('[data-options]').data('options');
