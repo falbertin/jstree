@@ -6,19 +6,25 @@ Enables drag'n'drop.
 (function ($) {
 	$.jstree.plugin("dnd", {
 		__construct : function () {
+                    var settings = this.get_settings(true).dnd;
+
 			this.get_container()
-				.delegate('a', 'mousedown', $.proxy(function (e) { 
-					var obj = this.get_node(e.target);
-					if(obj && obj !== -1 && obj.length && e.which === 1) { // TODO: think about e.which
-						return $.vakata.dnd.start(e, { 'jstree' : true, 'origin' : this, 'obj' : obj }, '<div id="jstree-dnd" class="' + (this.data.themes ? 'jstree-' + this.get_theme() : '') + '"><ins class="jstree-icon jstree-er">&#160;</ins>' + this.get_text(e.currentTarget, true) + '<ins class="jstree-copy" style="display:none;">+</ins></div>');
+				.delegate('a', 'mousedown', $.proxy(function (event) { 
+                                    // Check for and call the check_start method if present
+                                    if (settings && settings.check_start && settings.check_start()) {
+					var obj = this.get_node(event.target);
+					if(obj && obj !== -1 && obj.length && event.which === 1) { // TODO: think about e.which
+						return $.vakata.dnd.start(event, { 'jstree' : true, 'origin' : this, 'obj' : obj }, '<div id="jstree-dnd" class="' + (this.data.themes ? 'jstree-' + this.get_theme() : '') + '"><ins class="jstree-icon jstree-er">&#160;</ins>' + this.get_text(event.currentTarget, true) + '<ins class="jstree-copy" style="display:none;">+</ins></div>');
 					}
+                                    }
+                                    return true;
 				}, this));
 		},
 		// TODO: is check_timeout or is it OK as is?
 		// TODO: drag foreign items / drop foreign items (pretty easy with dnd events, but need to move marker placement in a function)
 		defaults : {
 			copy_modifier : 'ctrl',
-			open_timeout : 500
+			open_timeout : 500,
 		}
 	});
 
@@ -33,96 +39,107 @@ Enables drag'n'drop.
 				lastmv = false;
 			})
 			.bind('dnd_move.vakata', function (e, data) { 
-				if(opento) { clearTimeout(opento); }
-				if(!data.data.jstree) { return; }
+                            if(opento) { 
+                                clearTimeout(opento); 
+                            }
+                            if(!data.data.jstree) { 
+                                return; 
+                            }
 
-				// if we are hovering the marker image do nothing (can happen on "inside" drags)
-				if(data.event.target.id && data.event.target.id === 'jstree-marker') {
-					return;
-				}
+                            // if we are hovering the marker image do nothing (can happen on "inside" drags)
+                            if(data.event.target.id && data.event.target.id === 'jstree-marker') {
+                                    return;
+                            }
 
-				var ins = $.jstree._reference(data.event.target),
-					ref = false,
-					off = false,
-					rel = false,
-					l, t, h, p, i, o;
-				// if we are over an instance
-				if(ins && ins.data && ins.data.dnd) {
-					marker.attr('class', (ins.data.themes ? 'jstree-' + ins.get_theme() : ''));
-					data.helper
-						.children().attr('class', (ins.data.themes ? 'jstree-' + ins.get_theme() : ''))
-						.find('.jstree-copy:eq(0)')[ data.event[data.data.origin.get_settings().dnd.copy_modifier + "Key"] ? 'show' : 'hide' ]();
+                            var ins = $.jstree._reference(data.event.target),
+                                    ref = false,
+                                    off = false,
+                                    rel = false,
+                                    l, t, h, p, i, o;
+
+                            // if we are over an instance
+                            if(ins && ins.data && ins.data.dnd) {
+                                    marker.attr('class', (ins.data.themeroller ? 'ui-widget-jstree-marker' : ''));
+                                    data.helper
+                                            .children().attr('class', (ins.data.themes ? 'jstree-' + ins.get_theme() : ''))
+                                            .find('.jstree-copy:eq(0)')[ data.event[data.data.origin.get_settings().dnd.copy_modifier + "Key"] ? 'show' : 'hide' ]();
 
 
-					// if are hovering the container itself add a new root node
-					if(data.event.target === ins.get_container()[0] || data.event.target === ins.get_container_ul()[0]) {
-						if(ins.check( (data.event[data.data.origin.get_settings().dnd.copy_modifier + "Key"] ? "copy_node" : "move_node"), data.data.obj, -1, 'last')) {
-							lastmv = { 'ins' : ins, 'par' : -1, 'pos' : 'last' };
-							marker.hide();
-							data.helper.find('.jstree-icon:eq(0)').removeClass('jstree-er').addClass('jstree-ok');
-							return;
-						}
-					}
-					else { 
-						// if we are hovering a tree node
-						ref = $(data.event.target).closest('a');
-						if(ref && ref.length && ref.parent().is('.jstree-closed, .jstree-open, .jstree-leaf')) {
-							off = ref.offset();
-							rel = data.event.pageY - off.top;
-							h = ref.height();
-							if(rel < h / 3) { 
-								o = ['b', 'i', 'a'];
-							}
-							else if(rel > h - h / 3) {
-								o = ['a', 'i', 'b'];
-							}
-							else {
-								o = rel > h / 2 ? ['i', 'a', 'b'] : ['i', 'b', 'a'];
-							}
-							$.each(o, function (j, v) {
-								switch(v) {
-									case 'b':
-										l = off.left - 6;
-										t = off.top - 5;
-										p = ins.get_parent(ref);
-										i = ref.parent().index();
-										break;
-									case 'i':
-										l = off.left - 2;
-										t = off.top - 5 + h / 2 + 1;
-										p = ref.parent();
-										i = 0;
-										break;
-									case 'a':
-										l = off.left - 6;
-										t = off.top - 5 + h + 2;
-										p = ins.get_parent(ref);
-										i = ref.parent().index() + 1;
-										break;
-								}
-								/*
-								// TODO: moving inside, but the node is not yet loaded?
-								// the check will work anyway, as when moving the node will be loaded first and checked again
-								if(v === 'i' && !ins.is_loaded(p)) { }
-								*/
-								if(ins.check((data.event[data.data.origin.get_settings().dnd.copy_modifier + "Key"] ? "copy_node" : "move_node"),data.data.obj, p, i)) {
-									if(v === 'i' && ref.parent().is('.jstree-closed') && ins.get_settings(true).dnd.open_timeout) {
-										opento = setTimeout((function (x, z) { return function () { x.open_node(z); }; })(ins, ref), ins.get_settings(true).dnd.open_timeout);
-									}
-									lastmv = { 'ins' : ins, 'par' : p, 'pos' : i };
-									marker.css({ 'left' : l + 'px', 'top' : t + 'px' }).show();
-									data.helper.find('.jstree-icon:eq(0)').removeClass('jstree-er').addClass('jstree-ok');
-									o = true;
-									return false;
-								}
-							});
-							if(o === true) { return; }
-						}
-					}
-				}
-				lastmv = false;
-				data.helper.find('.jstree-icon').removeClass('jstree-ok').addClass('jstree-er');
-				marker.hide();
+                                    // if are hovering the container itself add a new root node
+                                    if(data.event.target === ins.get_container()[0] || data.event.target === ins.get_container_ul()[0]) {
+                                            if(ins.check( (data.event[data.data.origin.get_settings().dnd.copy_modifier + "Key"] ? "copy_node" : "move_node"), data.data.obj, -1, 'last')) {
+                                                    lastmv = { 'ins' : ins, 'par' : -1, 'pos' : 'last' };
+                                                    marker.hide();
+                                                    data.helper.find('.jstree-icon:eq(0)').removeClass('jstree-er').addClass('jstree-ok');
+                                                    return;
+                                            }
+                                    } else { 
+                                        // if we are hovering a tree node
+                                        ref = $(data.event.target).closest('a');
+                                        if(ref && ref.length && ref.parent().is('.jstree-closed, .jstree-open, .jstree-leaf')) {
+
+                                            // Check for and call check_drop if present
+                                            var settings = data.data.origin.get_settings(true).dnd;
+                                            if (settings && settings.check_drop(data.element, ref)) {
+                                                off = ref.offset();
+                                                rel = data.event.pageY - off.top;
+                                                h = ref.height();
+                                                if(rel < h / 3) { 
+                                                    o = ['b', 'i', 'a'];
+                                                }
+                                                else if(rel > h - h / 3) {
+                                                    o = ['a', 'i', 'b'];
+                                                }
+                                                else {
+                                                    o = rel > h / 2 ? ['i', 'a', 'b'] : ['i', 'b', 'a'];
+                                                }
+                                                $.each(o, function (j, v) {
+                                                    switch(v) {
+                                                        case 'b':
+                                                            l = off.left - 6;
+                                                            t = off.top - 5;
+                                                            p = ins.get_parent(ref);
+                                                            i = ref.parent().index();
+                                                            break;
+                                                        case 'i':
+                                                            l = off.left - 2;
+                                                            t = off.top - 5 + h / 2 + 1;
+                                                            p = ref.parent();
+                                                            i = 0;
+                                                            break;
+                                                        case 'a':
+                                                            l = off.left - 6;
+                                                            t = off.top - 5 + h + 2;
+                                                            p = ins.get_parent(ref);
+                                                            i = ref.parent().index() + 1;
+                                                            break;
+                                                    }
+                                                    /*
+                                                    // TODO: moving inside, but the node is not yet loaded?
+                                                    // the check will work anyway, as when moving the node will be loaded first and checked again
+                                                    if(v === 'i' && !ins.is_loaded(p)) { }
+                                                    */
+                                                    if(ins.check((data.event[data.data.origin.get_settings().dnd.copy_modifier + "Key"] ? "copy_node" : "move_node"),data.data.obj, p, i)) {
+                                                        if(v === 'i' && ref.parent().is('.jstree-closed') && ins.get_settings(true).dnd.open_timeout) {
+                                                            opento = setTimeout((function (x, z) { return function () { x.open_node(z); }; })(ins, ref), ins.get_settings(true).dnd.open_timeout);
+                                                        }
+                                                        lastmv = { 'ins' : ins, 'par' : p, 'pos' : i };
+                                                        marker.css({ 'left' : l + 'px', 'top' : t + 'px' }).show();
+                                                        data.helper.find('.jstree-icon:eq(0)').removeClass('jstree-er').addClass('jstree-ok');
+                                                        o = true;
+                                                        return false;
+                                                    }
+                                                });
+                                                if(o === true) { 
+                                                    return; 
+                                                }
+                                            }
+                                        }
+                                    }
+                            }
+                            lastmv = false;
+                            data.helper.find('.jstree-icon').removeClass('jstree-ok').addClass('jstree-er');
+                            marker.hide();
 			})
 			.bind('dnd_scroll.vakata', function (e, data) { 
 				if(!data.data.jstree) { return; }
@@ -130,14 +147,17 @@ Enables drag'n'drop.
 				lastmv = false;
 				data.helper.find('.jstree-icon:eq(0)').removeClass('jstree-ok').addClass('jstree-er');
 			})
-			.bind('dnd_stop.vakata', function (e, data) { 
-				if(opento) { clearTimeout(opento); }
-				if(!data.data.jstree) { return; }
-				marker.hide();
-				if(lastmv) {
-					lastmv.ins[ data.event[data.data.origin.get_settings().dnd.copy_modifier + "Key"] ? 'copy_node' : 'move_node' ]
-						(data.data.obj, lastmv.par, lastmv.pos);
-				}
+			.bind('dnd_stop.vakata', function (event, data) { 
+                            if(opento) { 
+                                clearTimeout(opento); 
+                            }
+                            if(!data.data.jstree) { 
+                                return; 
+                            }
+                            marker.hide();
+                            if(lastmv) {
+                                lastmv.ins[ data.event[data.data.origin.get_settings().dnd.copy_modifier + "Key"] ? 'copy_node' : 'move_node' ](data.data.obj, lastmv.par, lastmv.pos);
+                            }
 			})
 			.bind('keyup keydown', function (e) {
 				data = $.vakata.dnd._get();
