@@ -58,7 +58,7 @@
                     return true;
                 }
 
-                $(container).bind('open_node.jstree close_node.jstree load_node.jstree', styleNodes);
+                $(container).bind('open_node.jstree close_node.jstree load_node.jstree create_node.jstree', styleNodes);
 
                 $(container).bind('select_node.jstree', function(event, data){
                     $(container).find('a').removeClass('ui-state-active');
