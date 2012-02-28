@@ -10,18 +10,6 @@
                     $("#" + container.attr("id") + " li a").live("mouseout",  function () { $(this).removeClass("ui-state-hover"); });
                 });
 
-                $(container).bind("__construct.jstree", $.proxy(function () {
-                    var s = this.get_settings(true).themeroller;
-
-                    this.data.themeroller.dots = s.dots; 
-                    this.data.themeroller.icons = s.icons; 
-
-                    s.theme = this.data.core.rtl ? 'default-rtl' : 'default'; 
-                    this.set_theme(s.theme, s.url);
-
-                    this[ this.data.themeroller.icons ?  "show_icons" : "hide_icons" ]();
-                }, this));
-
                 var styleNodes = function() {
                     // Deselect nodes
                     $(container).find('a').removeClass('ui-state-active');
@@ -56,7 +44,7 @@
                         
                     });
                     return true;
-                }
+                };
 
                 $(container).bind('open_node.jstree close_node.jstree load_node.jstree create_node.jstree', styleNodes);
 
@@ -81,7 +69,7 @@
                 });
 
             },
-            defaults : { 
+            defaults : {
                 dots: true,
                 icons: true
             },
@@ -90,19 +78,19 @@
                     this.get_container().addClass('ui-widget-jstree');
                     this.__callback();
                 },
-                hide_dots: function () { 
-                    this.data.themeroller.dots = false; 
-                    this.get_container().children("ul").addClass("ui-widget-jstree-no-dots"); 
+                hide_dots: function () {
+                    this.data.themeroller.dots = false;
+                    this.get_container().children("ul").addClass("ui-widget-jstree-no-dots");
                 },
-                toggle_dots: function () { 
-                    if(this.data.themeroller.dots) this.hide_dots(); 
-                    else this.show_dots(); 
+                toggle_dots: function () {
+                    if(this.data.themeroller.dots) this.hide_dots();
+                    else this.show_dots();
                 },
-                show_icons: function () { 
-                    this.data.themeroller.icons = true; 
-                    this.get_container().children("ul").removeClass("ui-widget-jstree-no-icons"); 
+                show_icons: function () {
+                    this.data.themeroller.icons = true;
+                    this.get_container().children("ul").removeClass("ui-widget-jstree-no-icons");
                 },
-                hide_icons: function () { 
+                hide_icons: function () {
                     this.data.themeroller.icons = false; 
                     this.get_container().children("ul").addClass("ui-widget-jstree-no-icons"); 
                 },
